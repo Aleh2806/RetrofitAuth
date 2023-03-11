@@ -149,6 +149,10 @@ class MainActivity : AppCompatActivity() {
                     if (response.code() == 401) {
                         // На страницу авторизации
                     } else {
+                        saveTokens(
+                            response.body()!!.data.access_token,
+                            response.body()!!.data.refresh_token
+                        )
                         // Обновить токены!!! и access  и  refresh и сохранить в локальное хранилище(мб SP)
                         // НА страницу сезонов
                     }
@@ -174,6 +178,17 @@ class MainActivity : AppCompatActivity() {
         mEditor.putString(REFRESH_TOKEN, refreshToken)
         mEditor.apply()
         Toast.makeText(this, "Данные сохранены", Toast.LENGTH_SHORT).show()
+    }
+
+    fun getSeasons() {
+        //TODO: getAuthUser(token). Вернуть какой то ответ из метода get auth.
+        // Например если true,  делаем запрос на сезоны,
+        // если false - на авторизацию.
+
+//        if( getAuthUser(token) == true) {
+//            getSeasons
+//        }
+
     }
 }
 
