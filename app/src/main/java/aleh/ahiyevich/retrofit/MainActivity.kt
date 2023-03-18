@@ -1,6 +1,9 @@
 package aleh.ahiyevich.retrofit
 
 import aleh.ahiyevich.retrofit.api.auth.*
+import aleh.ahiyevich.retrofit.api.cases.Cases
+import aleh.ahiyevich.retrofit.api.cases.CasesApi
+import aleh.ahiyevich.retrofit.api.cases.DataCase
 import aleh.ahiyevich.retrofit.api.seasons.SeasonsApi
 import aleh.ahiyevich.retrofit.databinding.ActivityMainBinding
 import android.content.SharedPreferences
@@ -128,7 +131,9 @@ class MainActivity : AppCompatActivity() {
                 authUser = response.body()
                 if (response.isSuccessful) {
                     // на страницу сезонов
-                    getSeasons(authUser, token)
+//                    getSeasons(authUser, token)
+                    getCases(token,authUser)
+
                 } else if (response.code() == 401) {
                     Toast.makeText(this@MainActivity, "code 401", Toast.LENGTH_SHORT).show()
                     getAuthByRefreshToken()
@@ -164,15 +169,63 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 override fun onFailure(call: Call<Season>, t: Throwable) {
-
                 }
-
             })
         } else {
             // На страницу авторизации
             Toast.makeText(this, "go to auth", Toast.LENGTH_SHORT).show()
         }
     }
+
+
+    private fun getCases(token: String, authUser: AuthUser?) {
+        //TODO: Сделать динамически подставляемые id Сезонов
+
+        if (authUser?.success == true) {
+            val request = BaseRequest().retrofit.create(CasesApi::class.java)
+            val call = request.getCases("Bearer $token")
+            call.enqueue(object : Callback<Cases> {
+                override fun onResponse(call: Call<Cases>, response: Response<Cases>) {
+                    val data = response.body()!!.data
+                    binding.refreshToken.text = data[1].name
+                    data[0].
+
+                    Toast.makeText(this@MainActivity, "Cases gets", Toast.LENGTH_SHORT).show()
+
+                }
+
+                override fun onFailure(call: Call<Cases>, t: Throwable) {
+                }
+            })
+        } else {
+            // На страницу авторизации
+            Toast.makeText(this, "go to auth", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+
+//    private fun getMaterialsCase(authUser: AuthUser?, token: String) {
+//
+//        if (authUser?.success == true) {
+//            val request = BaseRequest().retrofit.create(CasesApi::class.java)
+//            val call = request.getCase("Bearer $token")
+//            call.enqueue(object : Callback<Cases> {
+//                override fun onResponse(call: Call<Cases>, response: Response<Cases>) {
+//                    val data = response.body()!!
+//
+//                    Toast.makeText(this@MainActivity, "Materials gets", Toast.LENGTH_SHORT).show()
+//
+//                }
+//
+//                override fun onFailure(call: Call<Cases>, t: Throwable) {
+//                }
+//            })
+//        } else {
+//            // На страницу авторизации
+//            Toast.makeText(this, "go to auth", Toast.LENGTH_SHORT).show()
+//        }
+//
+//    }
 
 
     private fun getAuthByRefreshToken() {

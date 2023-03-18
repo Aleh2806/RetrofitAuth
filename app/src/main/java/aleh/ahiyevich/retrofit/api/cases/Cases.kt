@@ -1,8 +1,8 @@
 package aleh.ahiyevich.retrofit.api.cases
 
-data class Case(
+data class Cases(
     val success: Boolean,
-    val data: DataCase
+    val data: List<DataCase>
 )
 
 data class DataCase(
