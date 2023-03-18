@@ -1,18 +1,15 @@
 package aleh.ahiyevich.retrofit
 
 import aleh.ahiyevich.retrofit.api.auth.*
+import aleh.ahiyevich.retrofit.api.seasons.SeasonsApi
 import aleh.ahiyevich.retrofit.databinding.ActivityMainBinding
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 
 const val ACCESS_TOKEN = "access token"
 const val REFRESH_TOKEN = "refresh token"
@@ -64,15 +61,20 @@ class MainActivity : AppCompatActivity() {
 //        }else {
 //            // отправляем на страницу авторизации
 //        }
-//        login()
 
-        var localAccessToken = sharedPref.getString(ACCESS_TOKEN, "")
 
+        val localAccessToken = sharedPref.getString(ACCESS_TOKEN, "")
         if (localAccessToken != null) {
+            //запрос на проверку валидности токена
             getAuthUser(localAccessToken)
+            Toast.makeText(this, "Authorization Success go to Seasons", Toast.LENGTH_SHORT).show()
         } else {
             // отправляем на страницу авторизации
-
+            Toast.makeText(
+                this,
+                "Go to Authorization page and use (fun login())",
+                Toast.LENGTH_SHORT
+            ).show()
         }
 
 
@@ -80,8 +82,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun login() {
         // TODO: Сделать получение данных из Едит текст
-        val email = "admin@admin.com"
-        val password = "Admin2022"
+        val email = binding.email.text.toString()
+        val password = binding.password.text.toString()
 
         val request = BaseRequest().retrofit.create(AuthApi::class.java)
         val call: Call<ResponseToken> = request.login(AuthRequest(email, password))
@@ -92,7 +94,12 @@ class MainActivity : AppCompatActivity() {
                         response.body()!!.data.access_token,
                         response.body()!!.data.refresh_token
                     )
-                    Toast.makeText(this@MainActivity, "Авторизация успешная", Toast.LENGTH_SHORT)
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Авторизация успешная\n\nAccess token = ${response.body()!!.data.access_token}\n\n" +
+                                "Refresh token = ${response.body()!!.data.refresh_token}",
+                        Toast.LENGTH_SHORT
+                    )
                         .show()
                 } else {
                     Toast.makeText(this@MainActivity, "Ошибка авторизации", Toast.LENGTH_SHORT)
@@ -112,14 +119,18 @@ class MainActivity : AppCompatActivity() {
 
 
     private fun getAuthUser(token: String) {
+        var authUser: AuthUser? = null
 
-        var request = BaseRequest().retrofit.create(AuthApi::class.java)
-        val call: Call<AuthUser> = request.getAuthUser("Bearer ${token}")
+        val request = BaseRequest().retrofit.create(AuthApi::class.java)
+        val call: Call<AuthUser> = request.getAuthUser("Bearer $token")
         call.enqueue(object : Callback<AuthUser> {
             override fun onResponse(call: Call<AuthUser>, response: Response<AuthUser>) {
+                authUser = response.body()
                 if (response.isSuccessful) {
                     // на страницу сезонов
+                    getSeasons(authUser, token)
                 } else if (response.code() == 401) {
+                    Toast.makeText(this@MainActivity, "code 401", Toast.LENGTH_SHORT).show()
                     getAuthByRefreshToken()
                 } else {
                     // вывод Ошибки
@@ -132,13 +143,42 @@ class MainActivity : AppCompatActivity() {
             }
 
         })
-
     }
+
+
+    fun getSeasons(authUser: AuthUser?, token: String) {
+        //TODO: getAuthUser(token). Вернуть какой то ответ из метода get auth.
+        // Например если true,  делаем запрос на сезоны,
+        // если false - на авторизацию.
+
+
+        if (authUser?.success == true) {
+            val request = BaseRequest().retrofit.create(SeasonsApi::class.java)
+            val call = request.getSeasons("Bearer $token")
+            call.enqueue(object : Callback<Season> {
+                override fun onResponse(call: Call<Season>, response: Response<Season>) {
+                    val data = response.body()!!.data
+                    binding.refreshToken.text = data[0].id.toString()
+                    Toast.makeText(this@MainActivity, "Seasons gets", Toast.LENGTH_SHORT).show()
+
+                }
+
+                override fun onFailure(call: Call<Season>, t: Throwable) {
+
+                }
+
+            })
+        } else {
+            // На страницу авторизации
+            Toast.makeText(this, "go to auth", Toast.LENGTH_SHORT).show()
+        }
+    }
+
 
     private fun getAuthByRefreshToken() {
         val refreshToken = sharedPref.getString(REFRESH_TOKEN, "")
         if (refreshToken != null) {
-            var request = BaseRequest().retrofit.create(AuthApi::class.java)
+            val request = BaseRequest().retrofit.create(AuthApi::class.java)
             val call: Call<ResponseToken> =
                 request.getAuthByRefreshToken(RefreshTokenRequest(refreshToken))
             call.enqueue(object : Callback<ResponseToken> {
@@ -147,13 +187,20 @@ class MainActivity : AppCompatActivity() {
                     response: Response<ResponseToken>
                 ) {
                     if (response.code() == 401) {
-                        // На страницу авторизации
+                        // На страницу авторизации + fun login()
                     } else {
                         saveTokens(
                             response.body()!!.data.access_token,
                             response.body()!!.data.refresh_token
                         )
-                        // Обновить токены!!! и access  и  refresh и сохранить в локальное хранилище(мб SP)
+                        Toast.makeText(
+                            this@MainActivity,
+                            "Tokens refresh, go to seasons",
+                            Toast.LENGTH_SHORT
+                        ).show()
+
+                        // Обновить токены!!! и access  и  refresh и сохранить в
+                        // локальное хранилище(мб SP)
                         // НА страницу сезонов
                     }
                 }
@@ -170,25 +217,13 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    // Добавляю Вьюхи только для того, чтобы отобразить на экране(если необходимо)
     private fun saveTokens(accessToken: String, refreshToken: String) {
         sharedPref = getPreferences(MODE_PRIVATE)
         val mEditor: SharedPreferences.Editor = sharedPref.edit()
         mEditor.putString(ACCESS_TOKEN, accessToken)
         mEditor.putString(REFRESH_TOKEN, refreshToken)
         mEditor.apply()
-        Toast.makeText(this, "Данные сохранены", Toast.LENGTH_SHORT).show()
     }
 
-    fun getSeasons() {
-        //TODO: getAuthUser(token). Вернуть какой то ответ из метода get auth.
-        // Например если true,  делаем запрос на сезоны,
-        // если false - на авторизацию.
-
-//        if( getAuthUser(token) == true) {
-//            getSeasons
-//        }
-
-    }
 }
 

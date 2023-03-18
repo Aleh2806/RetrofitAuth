@@ -1,6 +1,8 @@
 package aleh.ahiyevich.retrofit.api.seasons
 
 import aleh.ahiyevich.retrofit.api.auth.Season
+import aleh.ahiyevich.retrofit.api.auth.SeasonData
+import retrofit2.Call
 import retrofit2.http.GET
 import retrofit2.http.Header
 
@@ -8,5 +10,5 @@ import retrofit2.http.Header
 interface SeasonsApi {
 
     @GET("seasons/get-all")
-    suspend fun getSeasons(@Header ("Authorization") token: String): List<Season>
+    fun getSeasons(@Header ("Authorization") token: String): Call<Season>
 }
