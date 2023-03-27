@@ -13,6 +13,7 @@ import androidx.appcompat.app.AppCompatActivity
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import retrofit2.http.Query
 
 const val ACCESS_TOKEN = "access token"
 const val REFRESH_TOKEN = "refresh token"
@@ -183,12 +184,13 @@ class MainActivity : AppCompatActivity() {
 
         if (authUser?.success == true) {
             val request = BaseRequest().retrofit.create(CasesApi::class.java)
-            val call = request.getCases("Bearer $token")
+            val call = request.getCases("Bearer $token",2)
             call.enqueue(object : Callback<Cases> {
                 override fun onResponse(call: Call<Cases>, response: Response<Cases>) {
                     val data = response.body()!!.data
-                    binding.refreshToken.text = data[1].name
-                    data[0].
+
+                    val d = ""
+
 
                     Toast.makeText(this@MainActivity, "Cases gets", Toast.LENGTH_SHORT).show()
 
